@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF Viewer</title>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <style>
+        #canvas-container {
+            width: 100%;
+            height: 600px;
+            overflow: auto;
+            position: relative;
+        }
+        #pdf-canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+    <button id="select-text-btn">Select Text</button>
+    <div id="selected-text"></div>
+    <script>
+        const url = new URLSearchParams(window.location.search).get('pdf');
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null;
+
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            renderPage(pageNum);
+        });
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({scale: 1.5});
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                const renderTask = page.render(renderContext);
+                renderTask.promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+        }
+
+        document.getElementById('select-text-btn').addEventListener('click', () => {
+            const selectedText = window.getSelection().toString();
+            document.getElementById('selected-text').innerText = selectedText;
+            fetch('/save_selected_text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ selectedText }),
+            });
+        });
+    </script>
+</body>
+</html>
