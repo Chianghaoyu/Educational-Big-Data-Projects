@@ -61,7 +61,7 @@ qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(temperature=0.8), vectorst
 
 # Front-end web app setup using Gradio
 with gr.Blocks() as demo:
-    gr.Markdown("## Grounding DINO ChatBot")
+    gr.Markdown("##ChatBot")
     chatbot = gr.Chatbot()
     msg = gr.Textbox()
     clear = gr.Button("Clear")
