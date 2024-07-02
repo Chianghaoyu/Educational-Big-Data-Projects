@@ -7,9 +7,21 @@ import gradio as gr
 from PyPDF2 import PdfReader
 import os
 
-my_api_key = input("請輸入你的 API Key: ")
-#os.environ["GOOGLE_API_KEY"] = my_api_key
-os.environ["OPENAI_API_KEY"] = my_api_key
+# Function to read API keys from file
+def read_api_keys(file_path):
+    api_keys = {}
+    with open(file_path, "r") as file:
+        for line in file:
+            key, value = line.strip().split('=')
+            api_keys[key] = value
+    return api_keys
+
+# Read API keys from file
+api_keys = read_api_keys(r"C:\Users\a0981\OneDrive\桌面\api_key.txt")
+
+
+os.environ["OPENAI_API_KEY"] = api_keys["OpenAI"]
+
 # Initialize embeddings
 embeddings = OpenAIEmbeddings()
 
@@ -56,8 +68,10 @@ with gr.Blocks() as demo:
     chat_history = []
 
     def user(user_message, history):
+        # Ensure history is in the format of a list of tuples
+        chat_history_tuples = [(user, bot) for user, bot in history]
         # Get response from QA chain
-        response = qa({"question": user_message, "chat_history": history})
+        response = qa({"question": user_message, "chat_history": chat_history_tuples})
         # Append user message and response to chat history
         history.append((user_message, response["answer"]))
         return gr.update(value=""), history
@@ -65,5 +79,5 @@ with gr.Blocks() as demo:
     msg.submit(user, [msg, chatbot], [msg, chatbot], queue=False)
     clear.click(lambda: None, None, chatbot, queue=False)
 
-    if __name__ == "__main__":
-        demo.launch()
+if __name__ == "__main__":
+    demo.launch()
