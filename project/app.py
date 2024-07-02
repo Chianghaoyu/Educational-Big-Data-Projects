@@ -11,8 +11,20 @@ import google.generativeai as genai
 #load_dotenv()
 
 
-my_api_key = input("請輸入你的 GIMINI API Key: ")
+# Function to read API keys from file
+def read_api_keys(file_path):
+    api_keys = {}
+    with open(file_path, "r") as file:
+        for line in file:
+            key, value = line.strip().split('=')
+            api_keys[key] = value
+    return api_keys
 
+# Read API keys from file
+api_keys = read_api_keys(r"C:\Users\a0981\OneDrive\桌面\api_key.txt")
+
+# Set API keys as environment variables
+my_api_key = api_keys["GIMINI"]
 # Configure Google Generative AI with the API key
 genai.configure(api_key=my_api_key)
 
