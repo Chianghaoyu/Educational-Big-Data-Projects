@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Reader and Summarizer</title>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #uploadForm {
+            margin-bottom: 20px;
+        }
+        #container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            max-width: 1800px;
+        }
+        #pdf-container {
+            flex: 1;
+            margin-right: 20px;
+        }
+        #pdf-container embed {
+            width: 100%;
+            height: 100%;
+        }
+        #summary-container {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            height: 100%;
+        }
+        textarea {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #summary {
+            flex: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        #toggleSummaryButton {
+            margin-bottom: 10px;
+        }
+        #chat-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF Reader and Summarizer</h1>
+    <form id="uploadForm">
+        <label for="fileInput">Upload PDF:</label>
+        <input type="file" id="fileInput" name="file">
+        <button type="submit">Upload</button>
+    </form>
+    <button id="toggleSummaryButton">Show Summary Function</button>
+    <div id="container">
+        <div id="pdf-container"></div>
+        <div id="summary-container">
+            <textarea id="selectedText" placeholder="Paste selected text here..." rows="5"></textarea><br>
+            <button id="summarizeTextButton" disabled>Summarize Text</button>
+            <div id="summary"><md-block></md-block></div>
+        </div>
+    </div>
+    <div id="chat-container">
+        <h2>Chat with Paper</h2>
+        <textarea id="chatContext" placeholder="Paste paper text here..." rows="5"></textarea><br>
+        <input type="text" id="chatInput" placeholder="Ask a question...">
+        <button id="chatButton" disabled>Ask</button>
+        <div id="chatResponse"></div>
+    </div>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const response = await fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            const pdfPath = result.file_path;
+            const pdfUrl = pdfPath.replace(/\\/g, '/');
+            document.getElementById('pdf-container').innerHTML = `<embed id="pdfEmbed" src="${pdfUrl}" width="100%" height="100%" />`;
+        });
+
+        document.getElementById('selectedText').addEventListener('input', () => {
+            const selectedText = document.getElementById('selectedText').value.trim();
+            document.getElementById('summarizeTextButton').disabled = selectedText.length === 0;
+        });
+
+        document.getElementById('summarizeTextButton').addEventListener('click', async () => {
+            const selectedText = document.getElementById('selectedText').value.trim();
+            console.log("Selected text:", selectedText);
+            
+            const response = await fetch('/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: selectedText })
+            });
+
+            const result = await response.json();
+            const summaryElement = document.querySelector('#summary md-block');
+            summaryElement.textContent = result.summary;
+        });
+
+        document.getElementById('chatContext').addEventListener('input', () => {
+            const chatContext = document.getElementById('chatContext').value.trim();
+            document.getElementById('chatButton').disabled = chatContext.length === 0;
+        });
+
+        document.getElementById('chatButton').addEventListener('click', async () => {
+            const chatContext = document.getElementById('chatContext').value.trim();
+            const chatInput = document.getElementById('chatInput').value.trim();
+            
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: chatInput, context: chatContext })
+            });
+
+            const result = await response.json();
+            document.getElementById('chatResponse').textContent = result.response;
+        });
+
+        document.getElementById('toggleSummaryButton').addEventListener('click', () => {
+            const summaryContainer = document.getElementById('summary-container');
+            const pdfContainer = document.getElementById('pdf-container');
+            const button = document.getElementById('toggleSummaryButton');
+            if (summaryContainer.style.display === 'none') {
+                summaryContainer.style.display = 'flex';
+                pdfContainer.style.display = 'none';
+                button.textContent = 'Show PDF Viewer';
+            } else {
+                summaryContainer.style.display = 'none';
+                pdfContainer.style.display = 'block';
+                button.textContent = 'Show Summary Function';
+            }
+        });
+    </script>
+</body>
+</html>

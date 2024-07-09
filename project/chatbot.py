@@ -57,7 +57,7 @@ QA_PROMPT = PromptTemplate(
 )
 
 # Initialize conversation retrieval chain
-qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(temperature=0.8), vectorstore.as_retriever())
+qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(model="gpt-3.5-turbo-0125",temperature=0.8), vectorstore.as_retriever())
 
 # Front-end web app setup using Gradio
 with gr.Blocks() as demo:

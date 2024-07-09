@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ArXiv Paper Search</title>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #searchResults {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .highlight {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Papers on ArXiv</h1>
+    <form id="searchForm">
+        <label for="queryInput">Search Keyword:</label>
+        <input type="text" id="queryInput" name="query">
+        <button type="submit">Search</button>
+    </form>
+    <div id="searchResults"></div>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = document.getElementById('queryInput').value;
+
+            const response = await fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            });
+
+            const results = await response.json();
+            const searchResultsElement = document.getElementById('searchResults');
+            searchResultsElement.innerHTML = '';
+
+            results.forEach(result => {
+                const resultElement = document.createElement('div');
+                resultElement.innerHTML = `
+                    <h3>${result.title}</h3>
+                    <p>${result.highlighted_abstract}</p>
+                    <md-block>
+                    <p><strong>Summary:</strong> ${result.highlighted_summary}</p>
+                    </md-block>
+                    <a href="${result.pdf_url}" target="_blank">Download PDF</a>
+                `;
+                searchResultsElement.appendChild(resultElement);
+            });
+        });
+    </script>
+</body>
+</html>

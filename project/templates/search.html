@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Scholar Search</title>
+    <style>
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        .search-form {
+            margin-bottom: 20px;
+        }
+        .result {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .result h2 {
+            margin: 0 0 10px;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+        .download-form {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Google Scholar Search</h1>
+        <form class="search-form" method="POST">
+            <input type="text" name="keywords" placeholder="Enter search keywords" required>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if papers %}
+            <h2>Search Results for "{{ keywords }}"</h2>
+            {% for paper in papers %}
+                <div class="result">
+                    <h2>{{ paper['title'] }}</h2>
+                    <p><strong>Link:</strong> <a href="{{ paper['link'] }}">{{ paper['link'] }}</a></p>
+                    <p><strong>Summary:</strong> {{ paper.get('snippet', 'No summary available') }}</p>
+                    {% if 'resources' in paper and paper['resources'] %}
+                        {% for resource in paper['resources'] %}
+                            {% if resource['file_format'] == 'PDF' %}
+                                <form class="download-form" method="POST" action="/download">
+                                    <input type="hidden" name="pdf_url" value="{{ resource['link'] }}">
+                                    <button type="submit">Download PDF</button>
+                                </form>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>
