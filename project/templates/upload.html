@@ -9,95 +9,124 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px;
         }
-        #uploadForm {
-            margin-bottom: 20px;
+        #header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
         }
         #container {
             display: flex;
+            flex: 1;
+            height: calc(100vh - 50px);
+            overflow: hidden;
             width: 100%;
-            height: 80vh;
-            max-width: 1800px;
+            padding-top: 50px;
         }
         #pdf-container {
             flex: 1;
-            margin-right: 20px;
-            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
         }
         #pdf-container embed {
             width: 100%;
             height: 100%;
         }
         #functions-container {
-            flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            width: 50%;
+            transition: width 0.3s;
         }
         #summary-container, #chat-container {
-            width: 100%;
-            margin-bottom: 20px;
+            flex: 1;
+            padding: 10px;
+            overflow: auto;
+            display: none;
+        }
+        #summary {
+            height: 100%;
+            
+            white-space: pre-wrap;
+        }
+        .top-right-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        #uploadContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #uploadForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         textarea {
             width: 100%;
             margin-bottom: 10px;
         }
-        #summary {
-            flex: 1;
-            height: 30%;
-            overflow-y: scroll;
-            white-space: pre-wrap;
-        }
-        .hidden {
-            display: none;
-        }
-        .full-width {
-            width: 100%;
-        }
     </style>
 </head>
 <body>
-    <h1>PDF Reader, Summarizer, and Chat</h1>
-    <form id="uploadForm">
-        <label for="fileInput">Upload PDF:</label>
-        <input type="file" id="fileInput" name="file">
-        <button type="submit">Upload</button>
-    </form>
-    <div id="container">
-        <div id="pdf-container" class="full-width"></div>
-        <div id="functions-container" class="hidden">
-            <div id="summary-container" class="hidden">
+    <div id="header" style="display: none;">
+        <button onclick="window.location.href='/'" class="btn btn-secondary">Back to Search</button>
+        <div class="top-right-buttons">
+            <button id="toggleSummaryButton" class="btn btn-primary">Toggle Summary Function</button>
+            <button id="toggleChatButton" class="btn btn-primary">Toggle Chat Function</button>
+        </div>
+    </div>
+    <div id="uploadContainer">
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file" class="form-control">
+            <button type="submit" class="btn btn-primary mt-2">Upload</button>
+        </form>
+    </div>
+    <div id="container" style="display: none;">
+        <div id="pdf-container">
+            <embed id="pdfEmbed" src="" />
+        </div>
+        <div id="functions-container">
+            <div id="summary-container">
                 <h2>Summary Function</h2>
                 <textarea id="selectedText" placeholder="Paste selected text here..." rows="5"></textarea><br>
-                <button id="summarizeTextButton" disabled>Summarize Text</button>
+                <button id="summarizeTextButton" class="btn btn-primary" disabled>Summarize Text</button>
                 <div id="summary"><md-block></md-block></div>
             </div>
-
-            <div id="chat-container" class="hidden">
-                <div class="container mt-5">
-                    <h2>ChatBot</h2>
-                    <div class="card">
-                        <div class="card-body">
-                            <div id="chatPaper-container" class="mb-3" style="height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
-                                <!-- Chat messages will be appended here -->
-                            </div>
-                            <input type="text" id="user-message" class="form-control" placeholder="Type your message here...">
-                            <button id="send-btn" class="btn btn-primary mt-2">Send</button>
+            <div id="chat-container">
+                <h2>ChatBot</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div id="chatPaper-container" class="mb-3" style="height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
+                            <!-- Chat messages will be appended here -->
                         </div>
+                        <input type="text" id="user-message" class="form-control" placeholder="Type your message here...">
+                        <button id="send-btn" class="btn btn-primary mt-2">Send</button>
                     </div>
                 </div>
             </div>
-
-            
         </div>
     </div>
-    <button onclick="window.location.href='/'">Back to Search</button>
-    <button id="toggleSummaryButton">Toggle Summary Function</button>
-    <button id="toggleChatButton">Toggle Chat Function</button>
     <script>
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -113,7 +142,11 @@
             const result = await response.json();
             const pdfPath = result.file_path;
             const pdfUrl = pdfPath.replace(/\\/g, '/');
-            document.getElementById('pdf-container').innerHTML = `<embed id="pdfEmbed" src="${pdfUrl}" width="100%" height="100%" />`;
+            document.getElementById('pdfEmbed').src = pdfUrl;
+
+            document.getElementById('uploadContainer').style.display = 'none';
+            document.getElementById('header').style.display = 'flex';
+            document.getElementById('container').style.display = 'flex';
         });
 
         document.getElementById('selectedText').addEventListener('input', () => {
@@ -143,19 +176,6 @@
             const mdBlockElement = document.createElement('md-block');
             mdBlockElement.textContent = markdownSummary;
             summaryElement.appendChild(mdBlockElement);
-        });
-
-
-        document.getElementById('toggleSummaryButton').addEventListener('click', () => {
-            const summaryContainer = document.getElementById('summary-container');
-            summaryContainer.classList.toggle('hidden');
-            adjustLayout();
-        });
-
-        document.getElementById('toggleChatButton').addEventListener('click', () => {
-            const chatContainer = document.getElementById('chat-container');
-            chatContainer.classList.toggle('hidden');
-            adjustLayout();
         });
 
         $(document).ready(function() {
@@ -189,34 +209,53 @@
 
         let chatHistory = [];
 
+        document.getElementById('toggleSummaryButton').addEventListener('click', () => {
+            const summaryContainer = document.getElementById('summary-container');
+            summaryContainer.style.display = summaryContainer.style.display === 'none' ? 'block' : 'none';
+            adjustLayout();
+        });
+
+        document.getElementById('toggleChatButton').addEventListener('click', () => {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.style.display = chatContainer.style.display === 'none' ? 'block' : 'none';
+            adjustLayout();
+        });
+
         function adjustLayout() {
+            const pdfContainer = document.getElementById('pdf-container');
+            const functionsContainer = document.getElementById('functions-container');
             const summaryContainer = document.getElementById('summary-container');
             const chatContainer = document.getElementById('chat-container');
-            const functionsContainer = document.getElementById('functions-container');
-            const pdfContainer = document.getElementById('pdf-container');
 
-            const bothHidden = summaryContainer.classList.contains('hidden') && chatContainer.classList.contains('hidden');
-            const oneVisible = !summaryContainer.classList.contains('hidden') || !chatContainer.classList.contains('hidden');
+            const summaryVisible = summaryContainer.style.display === 'block';
+            const chatVisible = chatContainer.style.display === 'block';
 
-            if (bothHidden) {
-                functionsContainer.classList.add('hidden');
-                pdfContainer.classList.add('full-width');
+            if (!summaryVisible && !chatVisible) {
+                pdfContainer.style.flex = '1';
+                functionsContainer.style.width = '0';
             } else {
-                functionsContainer.classList.remove('hidden');
-                pdfContainer.classList.remove('full-width');
+                pdfContainer.style.flex = '1';
+                functionsContainer.style.width = '50%';
 
-                if (!summaryContainer.classList.contains('hidden') && !chatContainer.classList.contains('hidden')) {
-                    summaryContainer.style.height = 'calc(50% - 10px)';
-                    chatContainer.style.height = 'calc(50% - 10px)';
-                } else if (!summaryContainer.classList.contains('hidden')) {
-                    summaryContainer.style.height = '100%';
-                    chatContainer.style.height = '0';
-                } else if (!chatContainer.classList.contains('hidden')) {
-                    chatContainer.style.height = '100%';
-                    summaryContainer.style.height = '0';
+                if (summaryVisible && chatVisible) {
+                    summaryContainer.style.display = 'block';
+                    chatContainer.style.display = 'block';
+                    summaryContainer.style.flex = '1';
+                    chatContainer.style.flex = '1';
+                } else if (summaryVisible) {
+                    summaryContainer.style.display = 'block';
+                    chatContainer.style.display = 'none';
+                    summaryContainer.style.flex = '1';
+                } else if (chatVisible) {
+                    chatContainer.style.display = 'block';
+                    summaryContainer.style.display = 'none';
+                    chatContainer.style.flex = '1';
                 }
             }
         }
+
+        // Initial layout adjustment
+        adjustLayout();
     </script>
 </body>
 </html>
