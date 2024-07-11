@@ -39,7 +39,6 @@ embeddings = OpenAIEmbeddings()
 # Initialize conversation retrieval chain
 vectorstore = None
 qa = None
-
 def initialize_vectorstore_and_chain(pdf_path):
     global vectorstore, qa
     pdf_loader = PdfReader(pdf_path)
@@ -58,9 +57,9 @@ def initialize_vectorstore_and_chain(pdf_path):
     )
     texts = text_splitter.split_text(raw_text)
     vectorstore = FAISS.from_texts(texts, embeddings)
-    qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(model="gpt-3.5-turbo-0125",temperature=0.8), vectorstore.as_retriever())
+    qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(model="gpt-3.5-turbo-0125",temperature=0), vectorstore.as_retriever())
 
-# Define the summarize function
+
 
 def summarize_text(text):
     if not text:
