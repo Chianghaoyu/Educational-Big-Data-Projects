@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PDF Reader and Summarizer</title>
+    <title>PDF Reader, Summarizer, and Chat</title>
     <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,22 +20,27 @@
         #container {
             display: flex;
             width: 100%;
-            height: 100vh;
+            height: 80vh;
             max-width: 1800px;
         }
         #pdf-container {
             flex: 1;
             margin-right: 20px;
+            height: 100%;
         }
         #pdf-container embed {
             width: 100%;
             height: 100%;
         }
-        #summary-container {
-            display: none;
+        #functions-container {
             flex: 1;
+            display: flex;
             flex-direction: column;
-            height: 100%;
+            justify-content: space-between;
+        }
+        #summary-container, #chat-container {
+            width: 100%;
+            margin-bottom: 20px;
         }
         textarea {
             width: 100%;
@@ -41,40 +48,56 @@
         }
         #summary {
             flex: 1;
-            overflow-y: auto;
+            height: 30%;
+            overflow-y: scroll;
             white-space: pre-wrap;
         }
-        #toggleSummaryButton {
-            margin-bottom: 10px;
+        .hidden {
+            display: none;
         }
-        #chat-container {
-            margin-top: 20px;
+        .full-width {
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <h1>PDF Reader and Summarizer</h1>
+    <h1>PDF Reader, Summarizer, and Chat</h1>
     <form id="uploadForm">
         <label for="fileInput">Upload PDF:</label>
         <input type="file" id="fileInput" name="file">
         <button type="submit">Upload</button>
     </form>
-    <button id="toggleSummaryButton">Show Summary Function</button>
     <div id="container">
-        <div id="pdf-container"></div>
-        <div id="summary-container">
-            <textarea id="selectedText" placeholder="Paste selected text here..." rows="5"></textarea><br>
-            <button id="summarizeTextButton" disabled>Summarize Text</button>
-            <div id="summary"><md-block></md-block></div>
+        <div id="pdf-container" class="full-width"></div>
+        <div id="functions-container" class="hidden">
+            <div id="summary-container" class="hidden">
+                <h2>Summary Function</h2>
+                <textarea id="selectedText" placeholder="Paste selected text here..." rows="5"></textarea><br>
+                <button id="summarizeTextButton" disabled>Summarize Text</button>
+                <div id="summary"><md-block></md-block></div>
+            </div>
+
+            <div id="chat-container" class="hidden">
+                <div class="container mt-5">
+                    <h2>ChatBot</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div id="chatPaper-container" class="mb-3" style="height: 300px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px;">
+                                <!-- Chat messages will be appended here -->
+                            </div>
+                            <input type="text" id="user-message" class="form-control" placeholder="Type your message here...">
+                            <button id="send-btn" class="btn btn-primary mt-2">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
         </div>
     </div>
-    <div id="chat-container">
-        <h2>Chat with Paper</h2>
-        <textarea id="chatContext" placeholder="Paste paper text here..." rows="5"></textarea><br>
-        <input type="text" id="chatInput" placeholder="Ask a question...">
-        <button id="chatButton" disabled>Ask</button>
-        <div id="chatResponse"></div>
-    </div>
+    <button onclick="window.location.href='/'">Back to Search</button>
+    <button id="toggleSummaryButton">Toggle Summary Function</button>
+    <button id="toggleChatButton">Toggle Chat Function</button>
     <script>
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -111,45 +134,89 @@
             });
 
             const result = await response.json();
-            const summaryElement = document.querySelector('#summary md-block');
-            summaryElement.textContent = result.summary;
-        });
-
-        document.getElementById('chatContext').addEventListener('input', () => {
-            const chatContext = document.getElementById('chatContext').value.trim();
-            document.getElementById('chatButton').disabled = chatContext.length === 0;
-        });
-
-        document.getElementById('chatButton').addEventListener('click', async () => {
-            const chatContext = document.getElementById('chatContext').value.trim();
-            const chatInput = document.getElementById('chatInput').value.trim();
+            console.log("Summary result:", result);
+            const markdownSummary = result.summary;
+            console.log("Markdown summary:", markdownSummary);
             
-            const response = await fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: chatInput, context: chatContext })
-            });
-
-            const result = await response.json();
-            document.getElementById('chatResponse').textContent = result.response;
+            const summaryElement = document.getElementById('summary');
+            summaryElement.innerHTML = '';
+            const mdBlockElement = document.createElement('md-block');
+            mdBlockElement.textContent = markdownSummary;
+            summaryElement.appendChild(mdBlockElement);
         });
+
 
         document.getElementById('toggleSummaryButton').addEventListener('click', () => {
             const summaryContainer = document.getElementById('summary-container');
-            const pdfContainer = document.getElementById('pdf-container');
-            const button = document.getElementById('toggleSummaryButton');
-            if (summaryContainer.style.display === 'none') {
-                summaryContainer.style.display = 'flex';
-                pdfContainer.style.display = 'none';
-                button.textContent = 'Show PDF Viewer';
-            } else {
-                summaryContainer.style.display = 'none';
-                pdfContainer.style.display = 'block';
-                button.textContent = 'Show Summary Function';
-            }
+            summaryContainer.classList.toggle('hidden');
+            adjustLayout();
         });
+
+        document.getElementById('toggleChatButton').addEventListener('click', () => {
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.classList.toggle('hidden');
+            adjustLayout();
+        });
+
+        $(document).ready(function() {
+            $('#send-btn').click(function() {
+                const userMessage = $('#user-message').val();
+                if (userMessage.trim() === '') {
+                    return;
+                }
+                
+                const chatContainer = $('#chatPaper-container');
+                chatContainer.append(`<div><strong>You:</strong> ${userMessage}</div>`);
+                
+                $.ajax({
+                    url: '/chatbot',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        message: userMessage,
+                        history: chatHistory
+                    }),
+                    success: function(response) {
+                        const botMessage = response[response.length - 1][1];
+                        chatContainer.append(`<div><strong>Bot:</strong> ${botMessage}</div>`);
+                        chatHistory = response;
+                        $('#user-message').val('');
+                        chatContainer.scrollTop(chatContainer[0].scrollHeight);
+                    }
+                });
+            });
+        });
+
+        let chatHistory = [];
+
+        function adjustLayout() {
+            const summaryContainer = document.getElementById('summary-container');
+            const chatContainer = document.getElementById('chat-container');
+            const functionsContainer = document.getElementById('functions-container');
+            const pdfContainer = document.getElementById('pdf-container');
+
+            const bothHidden = summaryContainer.classList.contains('hidden') && chatContainer.classList.contains('hidden');
+            const oneVisible = !summaryContainer.classList.contains('hidden') || !chatContainer.classList.contains('hidden');
+
+            if (bothHidden) {
+                functionsContainer.classList.add('hidden');
+                pdfContainer.classList.add('full-width');
+            } else {
+                functionsContainer.classList.remove('hidden');
+                pdfContainer.classList.remove('full-width');
+
+                if (!summaryContainer.classList.contains('hidden') && !chatContainer.classList.contains('hidden')) {
+                    summaryContainer.style.height = 'calc(50% - 10px)';
+                    chatContainer.style.height = 'calc(50% - 10px)';
+                } else if (!summaryContainer.classList.contains('hidden')) {
+                    summaryContainer.style.height = '100%';
+                    chatContainer.style.height = '0';
+                } else if (!chatContainer.classList.contains('hidden')) {
+                    chatContainer.style.height = '100%';
+                    summaryContainer.style.height = '0';
+                }
+            }
+        }
     </script>
 </body>
 </html>

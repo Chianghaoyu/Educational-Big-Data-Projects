@@ -2,7 +2,7 @@ import os
 import re
 import openai
 import requests
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, send_from_directory
 from PyPDF2 import PdfReader
 from io import BytesIO
 from arxiv import Search, SortCriterion
@@ -31,7 +31,7 @@ api_keys = read_api_keys(r"C:\Users\a0981\OneDrive\桌面\api_key.txt")
 #os.environ["OPENAI_API_KEY"] = api_keys["OpenAI"]
 
 # Load API keys from environment variables
-openai.api_key = api_keys["OpenAI"]
+os.environ["OPENAI_API_KEY"] = api_keys["OpenAI"]
 genai.configure(api_key=api_keys["GIMINI"])
 # Initialize embeddings for the chatbot
 embeddings = OpenAIEmbeddings()
@@ -120,15 +120,15 @@ def search():
 def upload_file():
     file = request.files['file']
     if file:
-        pdf_path = os.path.join("/mnt/data", file.filename)
+        pdf_path = os.path.join("uploads", file.filename)
         file.save(pdf_path)
         initialize_vectorstore_and_chain(pdf_path)
-        pdf = PdfReader(BytesIO(file.read()))
-        text = ''
-        for page in pdf.pages:
-            text += page.extract_text()
-        return jsonify({'text': text})
+        return jsonify({'file_path': pdf_path})
     return jsonify({'error': 'No file uploaded'}), 400
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
 
 @app.route('/summarize', methods=['POST'])
 def summarize():
@@ -150,20 +150,19 @@ def chat():
     )
     return jsonify({'response': response.choices[0].text.strip()})
 
-@app.route('/chatbot', methods=['GET', 'POST'])
+@app.route('/chatbot', methods=['POST'])
 def chatbot():
-    if request.method == 'POST':
-        data = request.json
-        user_message = data.get("message")
-        chat_history = data.get("history", [])
-        
-        chat_history_tuples = [(user, bot) for user, bot in chat_history]
-        response = qa({"question": user_message, "chat_history": chat_history_tuples})
-        chat_history.append((user_message, response["answer"]))
-        
-        return jsonify(chat_history)
+    data = request.json
+    user_message = data.get("message")
+    chat_history = data.get("history", [])
     
-    return render_template('chatbot.html')
+    chat_history_tuples = [(user, bot) for user, bot in chat_history]
+    response = qa({"question": user_message, "chat_history": chat_history_tuples})
+    chat_history.append((user_message, response["answer"]))
+    
+    return jsonify(chat_history)
+    
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
