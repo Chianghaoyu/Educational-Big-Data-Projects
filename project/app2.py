@@ -59,8 +59,6 @@ def initialize_vectorstore_and_chain(pdf_path):
     vectorstore = FAISS.from_texts(texts, embeddings)
     qa = ConversationalRetrievalChain.from_llm(ChatOpenAI(model="gpt-3.5-turbo-0125",temperature=0), vectorstore.as_retriever())
 
-
-
 def summarize_text(text):
     if not text:
         return "No text provided for summarization", 400
@@ -74,7 +72,6 @@ def summarize_text(text):
     summary = response.text
     return summary
 
-
 # Define the highlight function
 def highlight_keywords(text, keywords):
     for keyword in keywords.split():
@@ -83,7 +80,7 @@ def highlight_keywords(text, keywords):
 
 @app.route('/')
 def home():
-    return render_template('integrated_search.html')
+    return render_template('integrated_search2.html')
 
 @app.route('/upload')
 def upload_page():
@@ -97,7 +94,7 @@ def search():
     # Search arXiv for papers
     search = Search(
         query=query,
-        max_results=5,
+        max_results=100,
         sort_by=SortCriterion.SubmittedDate
     )
     
@@ -109,8 +106,6 @@ def search():
             "pdf_url": result.pdf_url
         }
         paper_info["highlighted_abstract"] = highlight_keywords(paper_info["abstract"], query)
-        paper_info["summary"] = summarize_text(paper_info["abstract"])
-        paper_info["highlighted_summary"] = highlight_keywords(paper_info["summary"], query)
         papers.append(paper_info)
     
     return jsonify(papers)
@@ -136,6 +131,21 @@ def summarize():
     summary = summarize_text(text)
     return jsonify({'summary': summary})
 
+@app.route('/download_and_summarize', methods=['POST'])
+def download_and_summarize():
+    data = request.json
+    pdf_url = data.get('pdf_url')
+    
+    response = requests.get(pdf_url)
+    pdf_bytes = BytesIO(response.content)
+    pdf_reader = PdfReader(pdf_bytes)
+    raw_text = ''
+    for page in pdf_reader.pages:
+        raw_text += page.extract_text()
+    
+    summary = summarize_text(raw_text)
+    return jsonify({'summary': summary})
+
 @app.route('/chat', methods=['POST'])
 def chat():
     data = request.json
@@ -154,14 +164,12 @@ def chatbot():
     data = request.json
     user_message = data.get("message")
     chat_history = data.get("history", [])
-    
+
     chat_history_tuples = [(user, bot) for user, bot in chat_history]
     response = qa({"question": user_message, "chat_history": chat_history_tuples})
     chat_history.append((user_message, response["answer"]))
-    
+
     return jsonify(chat_history)
-    
-    
 
 if __name__ == '__main__':
     app.run(debug=True)
