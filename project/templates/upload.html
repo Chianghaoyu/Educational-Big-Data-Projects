@@ -89,9 +89,9 @@
     </style>
 </head>
 <body>
-    <div id="header" style="display: none;">
+    <div id="header" >
         <button onclick="window.location.href='/'" class="btn btn-secondary">Back to Search</button>
-        <div class="top-right-buttons">
+        <div id="top-right-div" class="top-right-buttons" style="display: none;">
             <button id="toggleSummaryButton" class="btn btn-primary">Toggle Summary Function</button>
             <button id="toggleChatButton" class="btn btn-primary">Toggle Chat Function</button>
         </div>
@@ -145,7 +145,7 @@
             document.getElementById('pdfEmbed').src = pdfUrl;
 
             document.getElementById('uploadContainer').style.display = 'none';
-            document.getElementById('header').style.display = 'flex';
+            document.getElementById('top-right-div').style.display = 'flex';
             document.getElementById('container').style.display = 'flex';
         });
 
