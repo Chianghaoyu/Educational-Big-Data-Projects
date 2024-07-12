@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="text/javascript" src="https://www.maths.nottingham.ac.uk/plp/pmadw/LaTeXMathML.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="module" src="https://md-block.verou.me/md-block.js"></script>
+    <title>ArXiv Search and Summarizer</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .pagination {
+            margin-top: 20px;
+        }
+        .top-right-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button onclick="window.location.href='/upload'" class="btn btn-secondary top-right-button">Upload PDF</button>
+        <h1>ArXiv Search</h1>
+        <form id="searchForm">
+            <div class="mb-3">
+                <label for="query" class="form-label">Search Query:</label>
+                <input type="text" id="query" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        
+        <div id="results"></div>
+        <nav>
+            <ul class="pagination"></ul>
+        </nav>
+    </div>
+
+    <script>
+        let papers = [];
+        const resultsPerPage = 10;
+        let currentPage = 1;
+
+        function renderResults(page) {
+            const start = (page - 1) * resultsPerPage;
+            const end = start + resultsPerPage;
+            const results = papers.slice(start, end);
+
+            const resultsContainer = $('#results');
+            resultsContainer.empty();
+            
+            results.forEach(paper => {
+                const paperElement = $(`
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${paper.title}</h5>
+                            <p>${paper.highlighted_abstract}</p>
+                            <a href="${paper.pdf_url}" target="_blank" class="btn btn-success" download>Download PDF</a>
+                            <button class="btn btn-secondary summary-btn" data-url="${paper.pdf_url}">Get Summary</button>
+                            <div class="summary mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                `);
+                resultsContainer.append(paperElement);
+            });
+        }
+
+        function renderPagination(totalPages) {
+            const paginationContainer = $('.pagination');
+            paginationContainer.empty();
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageItem = $(`
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `);
+                paginationContainer.append(pageItem);
+            }
+        }
+
+        $(document).ready(function() {
+            $('#searchForm').on('submit', function(e) {
+                e.preventDefault();
+                const query = $('#query').val().trim();
+                
+                $.ajax({
+                    url: '/search',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ query: query }),
+                    success: function(response) {
+                        papers = response;
+                        const totalPages = Math.ceil(papers.length / resultsPerPage);
+                        renderPagination(totalPages);
+                        renderResults(1);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', status, error);
+                    }
+                });
+            });
+
+            $(document).on('click', '.page-link', function() {
+                const page = $(this).data('page');
+                renderResults(page);
+                currentPage = page;
+            });
+
+            $(document).on('click', '.summary-btn', function() {
+                const pdfUrl = $(this).data('url');
+                const summaryDiv = $(this).next('.summary');
+
+                $.ajax({
+                    url: '/download_and_summarize',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ pdf_url: pdfUrl }),
+                    success: function(response) {
+                        summaryDiv.html(`<md-block><strong>Summary:</strong> ${response.summary}</md-block>`).show();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', status, error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
