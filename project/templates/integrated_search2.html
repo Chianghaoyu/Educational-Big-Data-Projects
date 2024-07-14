@@ -64,6 +64,7 @@
                     <div class="card mb-3">
                         <div class="card-body">
                             <h5 class="card-title">${paper.title}</h5>
+                            <p><strong>Published:</strong> ${paper.published}, <strong>Updated:</strong> ${paper.updated}</p>
                             <p>${paper.highlighted_abstract}</p>
                             <a href="${paper.pdf_url}" target="_blank" class="btn btn-success" download>Download PDF</a>
                             <button class="btn btn-secondary summary-btn" data-url="${paper.pdf_url}">Get Summary</button>

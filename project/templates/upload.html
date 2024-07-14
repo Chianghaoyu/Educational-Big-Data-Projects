@@ -52,7 +52,7 @@
             width: 50%;
             transition: width 0.3s;
         }
-        #summary-container, #chat-container {
+        #summary-container, #chat-container, #para-container {
             flex: 1;
             padding: 10px;
             overflow: auto;
@@ -86,14 +86,36 @@
             width: 100%;
             margin-bottom: 10px;
         }
+        .search-form {
+            margin-bottom: 20px;
+        }
+        .result {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .result h2 {
+            margin: 0 0 10px;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+        .download-form {
+            display: inline-block;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        
     </style>
 </head>
 <body>
     <div id="header" >
         <button onclick="window.location.href='/'" class="btn btn-secondary">Back to Search</button>
         <div id="top-right-div" class="top-right-buttons" style="display: none;">
-            <button id="toggleSummaryButton" class="btn btn-primary">Toggle Summary Function</button>
-            <button id="toggleChatButton" class="btn btn-primary">Toggle Chat Function</button>
+            <button id="toggleSummaryButton" class="btn btn-primary">Summary</button>
+            <button id="toggleChatButton" class="btn btn-primary">Chat</button>
+            <button id="toggleParaButton" class="btn btn-primary">Paragraph Search</button>
         </div>
     </div>
     <div id="uploadContainer">
@@ -124,6 +146,20 @@
                         <button id="send-btn" class="btn btn-primary mt-2">Send</button>
                     </div>
                 </div>
+            </div>
+            <div id="para-container">
+                <h2>Search</h2>
+                <form id="searchForm">
+                    <div class="mb-3">
+                        <label for="query" class="form-label">Search Query:</label>
+                        <input type="text" id="query" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-2">Search</button>
+                </form>
+                
+                <div id="results"></div>
+                
+        
             </div>
         </div>
     </div>
@@ -209,6 +245,80 @@
 
         let chatHistory = [];
 
+        let papers = [];
+        const resultsPerPage = 20;
+        let currentPage = 1;
+
+        function renderResults(page) {
+            const start = (page - 1) * resultsPerPage;
+            const end = start + resultsPerPage;
+            const results = papers.slice(start, end);
+
+            const resultsContainer = $('#results');
+            resultsContainer.empty();
+            
+            results.forEach(paper => {
+                const paperElement = $(`
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${paper.title}</h5>
+                            <p><strong>Published:</strong> ${paper.published}, <strong>Updated:</strong> ${paper.updated}</p>
+                            <p>${paper.abstract}</p>
+                            <a href="${paper.pdf_url}" target="_blank" class="btn btn-success" download>Download PDF</a>
+                            <button class="btn btn-secondary summary-btn" data-url="${paper.pdf_url}">Get Summary</button>
+                            <div class="summary mt-2" style="display: none;"></div>
+                        </div>
+                    </div>
+                `);
+                resultsContainer.append(paperElement);
+            });
+        }
+
+    
+
+        $(document).ready(function() {
+            $('#searchForm').on('submit', function(e) {
+                e.preventDefault();
+                const query = $('#query').val().trim();
+                
+                $.ajax({
+                    url: '/paraSearch',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ query: query }),
+                    success: function(response) {
+                        papers = response;
+                        
+                        
+                        renderResults(1);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', status, error);
+                    }
+                });
+            });
+
+            
+
+            $(document).on('click', '.summary-btn', function() {
+                const pdfUrl = $(this).data('url');
+                const summaryDiv = $(this).next('.summary');
+
+                $.ajax({
+                    url: '/download_and_summarize',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ pdf_url: pdfUrl }),
+                    success: function(response) {
+                        summaryDiv.html(`<md-block><strong>Summary:</strong> ${response.summary}</md-block>`).show();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', status, error);
+                    }
+                });
+            });
+        });
+
         document.getElementById('toggleSummaryButton').addEventListener('click', () => {
             const summaryContainer = document.getElementById('summary-container');
             summaryContainer.style.display = summaryContainer.style.display === 'none' ? 'block' : 'none';
@@ -221,34 +331,55 @@
             adjustLayout();
         });
 
+        document.getElementById('toggleParaButton').addEventListener('click', () => {
+            const paraContainer = document.getElementById('para-container');
+            paraContainer.style.display = paraContainer.style.display === 'none' ? 'block' : 'none';
+            adjustLayout();
+        });
+
         function adjustLayout() {
             const pdfContainer = document.getElementById('pdf-container');
             const functionsContainer = document.getElementById('functions-container');
             const summaryContainer = document.getElementById('summary-container');
             const chatContainer = document.getElementById('chat-container');
+            const paraContainer = document.getElementById('para-container');
 
             const summaryVisible = summaryContainer.style.display === 'block';
             const chatVisible = chatContainer.style.display === 'block';
+            const paraVisible = paraContainer.style.display === 'block';
 
-            if (!summaryVisible && !chatVisible) {
+            if(!paraVisible && !summaryVisible && !chatVisible) {
                 pdfContainer.style.flex = '1';
                 functionsContainer.style.width = '0';
-            } else {
+            }
+            else if (paraVisible) {
+                pdfContainer.style.flex = '1';
+                functionsContainer.style.width = '50%';
+
+                paraContainer.style.display = 'block';
+                chatContainer.style.display = 'none';
+                summaryContainer.style.display = 'none';
+                paraContainer.style.flex = '1';
+            } 
+            else {
                 pdfContainer.style.flex = '1';
                 functionsContainer.style.width = '50%';
 
                 if (summaryVisible && chatVisible) {
                     summaryContainer.style.display = 'block';
                     chatContainer.style.display = 'block';
+                    paraContainer.style.display = 'none';
                     summaryContainer.style.flex = '1';
                     chatContainer.style.flex = '1';
                 } else if (summaryVisible) {
                     summaryContainer.style.display = 'block';
                     chatContainer.style.display = 'none';
+                    paraContainer.style.display = 'none';
                     summaryContainer.style.flex = '1';
                 } else if (chatVisible) {
                     chatContainer.style.display = 'block';
                     summaryContainer.style.display = 'none';
+                    paraContainer.style.display = 'none';
                     chatContainer.style.flex = '1';
                 }
             }

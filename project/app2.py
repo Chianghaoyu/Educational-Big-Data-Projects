@@ -8,13 +8,13 @@ from io import BytesIO
 from arxiv import Search, SortCriterion
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import FAISS
-from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-import gradio as gr
 import google.generativeai as genai
 
+from search_tavily import tavilySearch
 app = Flask(__name__)
+app.register_blueprint(tavilySearch)
 
 # Function to read API keys from file
 def read_api_keys(file_path):
@@ -28,13 +28,13 @@ def read_api_keys(file_path):
 # Read API keys from file
 api_keys = read_api_keys(r"C:\Users\a0981\OneDrive\桌面\api_key.txt")
 
-#os.environ["OPENAI_API_KEY"] = api_keys["OpenAI"]
-
-# Load API keys from environment variables
+# Load API keys
 os.environ["OPENAI_API_KEY"] = api_keys["OpenAI"]
 genai.configure(api_key=api_keys["GIMINI"])
+
 # Initialize embeddings for the chatbot
 embeddings = OpenAIEmbeddings()
+
 
 # Initialize conversation retrieval chain
 vectorstore = None
@@ -78,6 +78,7 @@ def highlight_keywords(text, keywords):
         text = re.sub(f'(?i)({keyword})', r'<mark>\1</mark>', text)
     return text
 
+
 @app.route('/')
 def home():
     return render_template('integrated_search2.html')
@@ -103,7 +104,9 @@ def search():
         paper_info = {
             "title": result.title,
             "abstract": result.summary,
-            "pdf_url": result.pdf_url
+            "pdf_url": result.pdf_url,
+            "published": result.published.strftime('%Y-%m-%d'),
+            "updated": result.updated.strftime('%Y-%m-%d')
         }
         paper_info["highlighted_abstract"] = highlight_keywords(paper_info["abstract"], query)
         papers.append(paper_info)

@@ -30,8 +30,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>Google Scholar Search</h1>
-        <form class="search-form" method="POST">
+        <h2>Search</h2>
+        <form class="search-form" method="POST" action="/paraSearch">
             <input type="text" name="keywords" placeholder="Enter search keywords" required>
             <button type="submit">Search</button>
         </form>
@@ -41,8 +41,8 @@
             {% for paper in papers %}
                 <div class="result">
                     <h2>{{ paper['title'] }}</h2>
-                    <p><strong>Link:</strong> <a href="{{ paper['url'] }}">{{ paper['url'] }}</a></p>
-                    <p><strong>Summary:</strong> {{ paper.get('content', 'No summary available') }}</p>
+                    <p><strong>Link:</strong> <a href="{{ paper['pdf_url'] }}">{{ paper['pdf_url'] }}</a></p>
+                    <p><strong>Summary:</strong> {{ paper.get('abstract', 'No summary available') }}</p>
                     {% if paper.get('pdf_url') %}
                         <form class="download-form" method="POST" action="/download">
                             <input type="hidden" name="pdf_url" value="{{ paper['pdf_url'] }}">
