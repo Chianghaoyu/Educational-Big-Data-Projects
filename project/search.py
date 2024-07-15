@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, send_file
 from serpapi import GoogleSearch
 
 app = Flask(__name__)
-SERPAPI_API_KEY = '226288185e6fe224644cb4fd5b677530c82657eb364dd97870331b31656eb46e'  # Replace with your SerpApi API key
+SERPAPI_API_KEY = ''  # Replace with your SerpApi API key
 
 def search_papers(keywords):
     mySearch = GoogleSearch({
