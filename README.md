@@ -22,12 +22,12 @@ https://www.youtube.com/watch?v=3jrApIVDhws
 
 ## Files:
 
-app2.py - 主程式，實作了搜尋、摘要和回答問題等功能
+/project/app2.py - 主程式，實作了搜尋、摘要和回答問題等功能
 
-search_tavily.py - 實作了段落搜尋功能
+/project/search_tavily.py - 實作了段落搜尋功能
 
-integrated_search2.html - 呈現搜尋功能
+/project/templates/integrated_search2.html - 呈現搜尋功能
 
-upload.html - 呈現上傳論文、摘要、回答問題和段落搜尋等功能
+/project/templates/upload.html - 呈現上傳論文、摘要、回答問題和段落搜尋等功能
 
 其餘為練習和測試用途
