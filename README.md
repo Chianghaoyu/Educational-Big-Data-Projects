@@ -18,4 +18,12 @@ integrated_search2.html - 呈現搜尋功能
 
 upload.html - 呈現上傳論文、摘要、回答問題和段落搜尋等功能
 
+
+功能實作簡述
+
+搜尋 : arxiv api
+摘要 : gimini api
+回答問題 : 同時給 chat-gpt3.5 該篇論文和問題，要求以該篇論文的內容回答
+段落搜尋 : 串接 tavily 和 arxiv api
+
 其餘為練習和測試用途
