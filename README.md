@@ -20,7 +20,7 @@ https://www.youtube.com/watch?v=3jrApIVDhws
 
 段落搜尋 : 串接 tavily 和 arxiv api
 
-## files:
+## Files:
 
 app2.py - 主程式，實作了搜尋、摘要和回答問題等功能
 
