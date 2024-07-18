@@ -1,6 +1,13 @@
-# Educational-Big-Data-Projects
-論文閱讀器
+# 論文閱讀器　
+資工114　江皓宇
 
+課程 : 教育大數據專題製作
+
+授課老師 : 蔡芸琤
+
+助教 : 許家瑋
+
+## 介紹
 介紹影片
 https://www.youtube.com/watch?v=3jrApIVDhws
 
